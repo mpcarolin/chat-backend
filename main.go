@@ -1,42 +1,46 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"log/slog"
 	"net/http"
-	"time"
+	"os"
 
 	"chat-backend/internal/app"
+	"chat-backend/internal/chat"
 	"chat-backend/internal/chat/azure"
+	"chat-backend/internal/chat/mock"
+	"chat-backend/internal/handlers"
 )
 
-type Status struct {
-	Date   string `json:"date"`
-	Status string `json:"status"`
-}
+func buildAppContext() *app.AppContext {
+	var chatProvider chat.ChatProvider
 
-func statusHandler(appCtx *app.AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-	encoded, err := json.Marshal(&Status{
-		Date:   time.Now().UTC().String(),
-		Status: "Running",
-	})
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+	if os.Getenv("MOCK_CHAT") == "true" {
+		slog.Info("Using mock chat provider")
+		chatProvider = mock.NewMockChatProvider()
+	} else {
+		endpoint := os.Getenv("AZURE_QNA_ENDPOINT")
+		apiKey := os.Getenv("AZURE_QNA_API_KEY")
+		projectName := os.Getenv("AZURE_QNA_PROJECT_NAME")
+		deploymentName := os.Getenv("AZURE_QNA_DEPLOYMENT_NAME")
+
+		if endpoint == "" || apiKey == "" || projectName == "" || deploymentName == "" {
+			log.Fatal("Required Azure environment variables not set: AZURE_QNA_ENDPOINT, AZURE_QNA_API_KEY, AZURE_QNA_PROJECT_NAME, AZURE_QNA_DEPLOYMENT_NAME")
+		}
+
+		slog.Info("Using Azure chat provider")
+		chatProvider = azure.NewAzureChatProvider(endpoint, apiKey, projectName, deploymentName)
 	}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(encoded)
-	}
+	return app.NewAppContext(chatProvider)
 }
 
 func main() {
-	azureProvider := azure.NewAzureChatProvider("", "")
-	appCtx := app.NewAppContext(azureProvider)
+	appCtx := buildAppContext()
 
-	http.HandleFunc("/status", statusHandler(appCtx))
+	http.HandleFunc("/status", handlers.StatusHandler(appCtx))
+	http.HandleFunc("/api/faq", handlers.FAQHandler(appCtx))
 
 	slog.Info("Starting server on localhost:8090")
 	err := http.ListenAndServe(":8090", nil)

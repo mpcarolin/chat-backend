@@ -1,1 +1,6 @@
-GET http://localhost:8090/status
+POST http://localhost:8090/api/faq
+content-type: application/json
+
+{
+    "question": "Meaning of life, what is it?"
+}
