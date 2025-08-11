@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  chat-backend:
+    build: .
+    ports:
+      - "8090:8090"
+    environment:
+      - MOCK_CHAT=${MOCK_CHAT:-false}
+      - AZURE_QNA_ENDPOINT=${AZURE_QNA_ENDPOINT}
+      - AZURE_QNA_API_KEY=${AZURE_QNA_API_KEY}
+      - AZURE_QNA_PROJECT_NAME=${AZURE_QNA_PROJECT_NAME}
+      - AZURE_QNA_DEPLOYMENT_NAME=${AZURE_QNA_DEPLOYMENT_NAME}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8090/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
