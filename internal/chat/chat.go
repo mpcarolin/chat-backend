@@ -1,6 +1,14 @@
 package chat
 
-import "context"
+import (
+	"context"
+	"errors"
+)
+
+var (
+	ErrProviderUnavailable = errors.New("chat provider unavailable")
+	ErrInvalidRequest      = errors.New("invalid request")
+)
 
 type Message struct {
 	Role    string `json:"role"`
