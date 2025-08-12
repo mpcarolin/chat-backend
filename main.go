@@ -11,6 +11,7 @@ import (
 	"chat-backend/internal/chat/azure"
 	"chat-backend/internal/chat/mock"
 	"chat-backend/internal/handlers"
+	mw "chat-backend/internal/middleware"
 )
 
 func buildAppContext() *app.AppContext {
@@ -26,7 +27,7 @@ func buildAppContext() *app.AppContext {
 		deploymentName := os.Getenv("AZURE_QNA_DEPLOYMENT_NAME")
 
 		if endpoint == "" || apiKey == "" || projectName == "" || deploymentName == "" {
-			log.Fatal("Required Azure environment variables not set: AZURE_QNA_ENDPOINT, AZURE_QNA_API_KEY, AZURE_QNA_PROJECT_NAME, AZURE_QNA_DEPLOYMENT_NAME")
+			log.Fatal("All required Azure envs must be set: AZURE_QNA_ENDPOINT, AZURE_QNA_API_KEY, AZURE_QNA_PROJECT_NAME, AZURE_QNA_DEPLOYMENT_NAME")
 		}
 
 		slog.Info("Using Azure chat provider")
@@ -37,12 +38,14 @@ func buildAppContext() *app.AppContext {
 }
 
 func main() {
-	appCtx := buildAppContext()
+	ctx := buildAppContext()
 
-	http.HandleFunc("/status", handlers.StatusHandler(appCtx))
-	http.HandleFunc("/api/faq", handlers.FAQHandler(appCtx))
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /status", mw.Logger(handlers.StatusHandler(ctx)))
+	mux.HandleFunc("POST /api/faq", mw.Logger(handlers.FAQHandler(ctx)))
 
 	slog.Info("Starting server on localhost:8090")
-	err := http.ListenAndServe(":8090", nil)
+	err := http.ListenAndServe(":8090", mux)
 	log.Fatal(err)
 }

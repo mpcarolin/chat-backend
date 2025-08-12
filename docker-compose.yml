@@ -16,3 +16,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    develop:
+      watch:
+        - action: rebuild
+          path: .
+          ignore:
+            - api/
+            - .git/
+            - .dockerignore
+            - Dockerfile
+            - docker-compose.yml
+            - README.md
+            - "*.log"

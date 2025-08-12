@@ -1,4 +1,4 @@
-.PHONY: help run test build clean dbuild up mock-run
+.PHONY: help run test build clean dbuild up watch mock-run
 
 # Default target
 help:
@@ -8,8 +8,9 @@ help:
 	@echo "  make test       - Run all tests"
 	@echo "  make build      - Build the application"
 	@echo "  make clean      - Remove built binaries"
-	@echo "  make dbuild - Build Docker image"
-	@echo "  make up   - Run with Docker Compose"
+	@echo "  make dbuild     - Build Docker image"
+	@echo "  make up         - Run with Docker Compose"
+	@echo "  make watch      - Run with Docker Compose watch (auto-rebuild)"
 
 # Run the server with real chat provider
 run:
@@ -38,3 +39,7 @@ dbuild:
 # Run with Docker Compose
 up:
 	docker-compose up
+
+# Run with Docker Compose watch (auto-rebuild on file changes)
+watch:
+	docker-compose watch
