@@ -2,5 +2,5 @@ POST http://localhost:8090/api/faq
 content-type: application/json
 
 {
-    "question": "What is Darth Vader's other name?"
+    "question": "Who is Luke Skywalker's father?"
 }

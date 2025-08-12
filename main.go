@@ -38,6 +38,7 @@ func buildAppContext() *app.AppContext {
 }
 
 func main() {
+	// TODO: change this to use echo/labstack library and rate limiting middleware
 	ctx := buildAppContext()
 
 	mux := http.NewServeMux()
