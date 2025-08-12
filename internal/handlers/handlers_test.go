@@ -100,21 +100,6 @@ func TestFAQHandler_InvalidJSON(t *testing.T) {
 	}
 }
 
-func TestFAQHandler_MethodNotAllowed(t *testing.T) {
-	mockProvider := &mockChatProvider{}
-	appCtx := app.NewAppContext(mockProvider)
-
-	req := httptest.NewRequest("GET", "/api/faq", nil)
-	recorder := httptest.NewRecorder()
-
-	handler := FAQHandler(appCtx)
-	handler(recorder, req)
-
-	if recorder.Code != http.StatusMethodNotAllowed {
-		t.Errorf("Expected status code %d, got %d", http.StatusMethodNotAllowed, recorder.Code)
-	}
-}
-
 func TestFAQHandler_ChatProviderError(t *testing.T) {
 	mockProvider := &mockChatProvider{
 		err: chat.ErrProviderUnavailable,
@@ -163,3 +148,4 @@ func TestStatusHandler(t *testing.T) {
 		t.Error("Expected date to be set")
 	}
 }
+

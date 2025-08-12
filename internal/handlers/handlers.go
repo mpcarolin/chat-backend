@@ -41,11 +41,6 @@ func StatusHandler(appCtx *app.AppContext) http.HandlerFunc {
 
 func FAQHandler(appCtx *app.AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
 		var faqReq FAQRequest
 		if err := json.NewDecoder(req.Body).Decode(&faqReq); err != nil {
 			slog.Error("Failed to decode FAQ request", "error", err)
@@ -86,3 +81,4 @@ func FAQHandler(appCtx *app.AppContext) http.HandlerFunc {
 		}
 	}
 }
+

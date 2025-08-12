@@ -15,7 +15,7 @@ type AzureQuestionAnsweringClient interface {
 	Query(ctx context.Context, question string) (*QueryResponse, error)
 }
 
-type HTTPClient struct {
+type azureHttpClient struct {
 	endpoint       string
 	apiKey         string
 	projectName    string
@@ -41,7 +41,7 @@ type QueryAnswer struct {
 }
 
 func NewClient(endpoint, apiKey, projectName, deploymentName string) AzureQuestionAnsweringClient {
-	return &HTTPClient{
+	return &azureHttpClient{
 		endpoint:       endpoint,
 		apiKey:         apiKey,
 		projectName:    projectName,
@@ -50,12 +50,23 @@ func NewClient(endpoint, apiKey, projectName, deploymentName string) AzureQuesti
 	}
 }
 
-func (c *HTTPClient) Query(ctx context.Context, question string) (*QueryResponse, error) {
+func (c *azureHttpClient) getQueryURL() string {
+	return fmt.Sprintf(
+		"%s/language/:query-knowledgebases?api-version=2021-10-01&projectName=%s&deploymentName=%s",
+		c.endpoint,
+		url.QueryEscape(c.projectName),
+		url.QueryEscape(c.deploymentName),
+	)
+}
+
+func (c *azureHttpClient) Query(ctx context.Context, question string) (*QueryResponse, error) {
 	queryReq := QueryRequest{
 		Question:                 question,
 		ConfidenceScoreThreshold: 0.2,
 		Top:                      1,
 	}
+
+	url := c.getQueryURL()
 
 	jsonData, err := json.Marshal(queryReq)
 	if err != nil {
@@ -63,10 +74,12 @@ func (c *HTTPClient) Query(ctx context.Context, question string) (*QueryResponse
 		return nil, fmt.Errorf("failed to prepare request")
 	}
 
-	apiURL := fmt.Sprintf("%s/language/:query-knowledgebases?api-version=2021-10-01&projectName=%s&deploymentName=%s",
-		c.endpoint, url.QueryEscape(c.projectName), url.QueryEscape(c.deploymentName))
-
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(jsonData))
+	httpReq, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		url,
+		bytes.NewBuffer(jsonData),
+	)
 	if err != nil {
 		slog.Error("Failed to create HTTP request", "error", err)
 		return nil, fmt.Errorf("failed to create request")
@@ -77,7 +90,7 @@ func (c *HTTPClient) Query(ctx context.Context, question string) (*QueryResponse
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
-		slog.Error("Failed to make request to Azure", "error", err, "url", apiURL)
+		slog.Error("Failed to make request to Azure", "error", err, "url", url)
 		return nil, fmt.Errorf("failed to connect to Azure service")
 	}
 	defer resp.Body.Close()

@@ -1,4 +1,4 @@
-.PHONY: help run test build clean docker-build docker-run mock-run
+.PHONY: help run test build clean dbuild up mock-run
 
 # Default target
 help:
@@ -8,10 +8,10 @@ help:
 	@echo "  make test       - Run all tests"
 	@echo "  make build      - Build the application"
 	@echo "  make clean      - Remove built binaries"
-	@echo "  make docker-build - Build Docker image"
-	@echo "  make docker-run   - Run with Docker Compose"
+	@echo "  make dbuild - Build Docker image"
+	@echo "  make up   - Run with Docker Compose"
 
-# Run the server with Azure provider
+# Run the server with real chat provider
 run:
 	go run .
 
@@ -32,9 +32,9 @@ clean:
 	rm -f chat-backend
 
 # Build Docker image
-docker-build:
+dbuild:
 	docker-compose build
 
 # Run with Docker Compose
-docker-run:
+up:
 	docker-compose up
