@@ -1,10 +1,11 @@
 package handlers
 
 import (
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/labstack/echo/v4"
 
 	"chat-backend/internal/app"
 	"chat-backend/internal/chat"
@@ -23,34 +24,26 @@ type FAQResponse struct {
 	Answer string `json:"answer"`
 }
 
-func StatusHandler(appCtx *app.AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		encoded, err := json.Marshal(&Status{
+func StatusHandler(appCtx *app.AppContext) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		status := Status{
 			Date:   time.Now().UTC().String(),
 			Status: "Running",
-		})
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
 		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(encoded)
+		return c.JSON(http.StatusOK, status)
 	}
 }
 
-func FAQHandler(appCtx *app.AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
+func FAQHandler(appCtx *app.AppContext) echo.HandlerFunc {
+	return func(c echo.Context) error {
 		var faqReq FAQRequest
-		if err := json.NewDecoder(req.Body).Decode(&faqReq); err != nil {
+		if err := c.Bind(&faqReq); err != nil {
 			slog.Error("Failed to decode FAQ request", "error", err)
-			http.Error(w, "Invalid request format", http.StatusBadRequest)
-			return
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request format"})
 		}
 
 		if faqReq.Question == "" {
-			http.Error(w, "Question is required", http.StatusBadRequest)
-			return
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Question is required"})
 		}
 
 		chatReq := &chat.ChatRequest{
@@ -62,23 +55,17 @@ func FAQHandler(appCtx *app.AppContext) http.HandlerFunc {
 			},
 		}
 
-		chatResp, err := appCtx.ChatProvider.Chat(req.Context(), chatReq)
+		chatResp, err := appCtx.ChatProvider.Chat(c.Request().Context(), chatReq)
 		if err != nil {
 			slog.Error("Failed to get answer from chat provider", "error", err, "question", faqReq.Question)
-			http.Error(w, "Failed to process question", http.StatusInternalServerError)
-			return
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to process question"})
 		}
 
 		faqResp := FAQResponse{
 			Answer: chatResp.Content,
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(faqResp); err != nil {
-			slog.Error("Failed to encode FAQ response", "error", err)
-			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-			return
-		}
+		return c.JSON(http.StatusOK, faqResp)
 	}
 }
 

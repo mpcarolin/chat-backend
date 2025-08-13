@@ -3,17 +3,19 @@ package middleware
 import (
 	"fmt"
 	"log/slog"
-	"net/http"
 	"time"
+
+	"github.com/labstack/echo/v4"
 )
 
-func Logger(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		info := fmt.Sprintf("[%s] %s", time.Now().UTC().String(), req.Pattern)
-		slog.Info(info)
+func Logger() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			req := c.Request()
+			info := fmt.Sprintf("[%s] %s %s", time.Now().UTC().String(), req.Method, req.URL.Path)
+			slog.Info(info)
 
-		if next != nil {
-			next(w, req)
+			return next(c)
 		}
 	}
 }

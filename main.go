@@ -3,15 +3,16 @@ package main
 import (
 	"log"
 	"log/slog"
-	"net/http"
 	"os"
+
+	"github.com/labstack/echo/v4"
 
 	"chat-backend/internal/app"
 	"chat-backend/internal/chat"
 	"chat-backend/internal/chat/azure"
 	"chat-backend/internal/chat/mock"
 	"chat-backend/internal/handlers"
-	mw "chat-backend/internal/middleware"
+	"chat-backend/internal/middleware"
 )
 
 func buildAppContext() *app.AppContext {
@@ -38,15 +39,18 @@ func buildAppContext() *app.AppContext {
 }
 
 func main() {
-	// TODO: change this to use echo/labstack library and rate limiting middleware
 	ctx := buildAppContext()
 
-	mux := http.NewServeMux()
+	e := echo.New()
 
-	mux.HandleFunc("GET /status", mw.Logger(handlers.StatusHandler(ctx)))
-	mux.HandleFunc("POST /api/faq", mw.Logger(handlers.FAQHandler(ctx)))
+	// Add middleware
+	e.Use(middleware.Logger())
+	e.Use(middleware.RateLimit())
+
+	// Routes
+	e.GET("/status", handlers.StatusHandler(ctx))
+	e.POST("/api/faq", handlers.FAQHandler(ctx))
 
 	slog.Info("Starting server on localhost:8090")
-	err := http.ListenAndServe(":8090", mux)
-	log.Fatal(err)
+	log.Fatal(e.Start(":8090"))
 }
