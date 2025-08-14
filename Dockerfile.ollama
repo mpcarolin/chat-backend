@@ -1,0 +1,8 @@
+FROM docker.io/ollama/ollama:0.11.4
+
+# Start ollama server in background and pull the model
+RUN ollama serve & \
+    sleep 10 && \
+    ollama pull gemma3:1b && \
+    pkill ollama
+

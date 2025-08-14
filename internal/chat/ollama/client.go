@@ -84,6 +84,7 @@ func (c *ollamaHttpClient) Chat(ctx context.Context, req *ChatRequest) (*ChatRes
 	return c.handleNonStreamingResponse(resp.Body)
 }
 
+// TODO: this isn't right, not actually streaming. Let's fix.
 func (c *ollamaHttpClient) handleStreamingResponse(body io.Reader) (*ChatResponse, error) {
 	var fullContent strings.Builder
 	decoder := json.NewDecoder(body)
@@ -121,3 +122,4 @@ func (c *ollamaHttpClient) handleNonStreamingResponse(body io.Reader) (*ChatResp
 
 	return &ollamaResp, nil
 }
+
