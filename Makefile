@@ -28,36 +28,36 @@ help:
 	@echo "  OLLAMA_MODEL (default: mistral)"
 
 # Run the server with default provider (mock)
-run:
-	go run .
+api:
+	cd packages/api && go run .
 
 # Run the server with mock provider
-run-mock:
-	CHAT_PROVIDER=mock go run .
+api-mock:
+	cd packages/api && CHAT_PROVIDER=mock go run .
 
 # Run the server with Azure Q&A provider
-run-azure:
+api-azure:
 	@if [ -z "$$AZURE_QNA_ENDPOINT" ] || [ -z "$$AZURE_QNA_API_KEY" ] || [ -z "$$AZURE_QNA_PROJECT_NAME" ] || [ -z "$$AZURE_QNA_DEPLOYMENT_NAME" ]; then \
 		echo "Error: Azure environment variables not set."; \
 		echo "Please set: AZURE_QNA_ENDPOINT, AZURE_QNA_API_KEY, AZURE_QNA_PROJECT_NAME, AZURE_QNA_DEPLOYMENT_NAME"; \
 		exit 1; \
 	fi
-	CHAT_PROVIDER=azure-qa go run .
+	cd packages/api && CHAT_PROVIDER=azure-qa go run .
 
 # Run the server with Ollama provider
-run-ollama:
+api-ollama:
 	@echo "Starting server with Ollama provider..."
 	@echo "Using OLLAMA_BASE_URL: $${OLLAMA_BASE_URL:-http://localhost:11434}"
 	@echo "Using OLLAMA_MODEL: $${OLLAMA_MODEL:-mistral}"
-	CHAT_PROVIDER=ollama go run .
+	cd packages/api && CHAT_PROVIDER=ollama go run .
 
 # Run all tests
 test:
-	go test -v ./...
+	cd packages/api && go test -v ./...
 
 # Build the application
-build:
-	go build -o chat-backend
+build-api:
+	cd packages/api && go build -o ../../chat-backend
 
 # Clean built binaries
 clean:

@@ -13,7 +13,8 @@ services:
       - OLLAMA_HOST=0.0.0.0
   chat-backend:
     container_name: chat-backend
-    build: .
+    build:
+      context: packages/api
     ports:
       - "8090:8090"
     environment:
@@ -35,11 +36,3 @@ services:
       watch:
         - action: rebuild
           path: .
-          ignore:
-            - api/
-            - .git/
-            - .dockerignore
-            - Dockerfile
-            - docker-compose.yml
-            - README.md
-            - "*.log"
