@@ -22,7 +22,7 @@ func main() {
 
 	// Routes
 	e.GET("/status", handlers.StatusHandler(ctx))
-	e.POST("/api/faq", handlers.FAQHandler(ctx))
+	e.POST("/api/chat", handlers.ChatHandler(ctx))
 
 	slog.Info("Starting server on localhost:8090")
 	log.Fatal(e.Start(":8090"))

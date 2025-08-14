@@ -10,6 +10,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/labstack/echo/v4"
+
 	"chat-backend/internal/app"
 	"chat-backend/internal/chat"
 )
@@ -32,7 +34,7 @@ func init() {
 	})))
 }
 
-func TestFAQHandler_Success(t *testing.T) {
+func TestChatHandler_Success(t *testing.T) {
 	mockProvider := &mockChatProvider{
 		response: &chat.ChatResponse{
 			Content: "This is the answer to your question.",
@@ -40,81 +42,111 @@ func TestFAQHandler_Success(t *testing.T) {
 	}
 	appCtx := app.NewAppContext(mockProvider)
 
-	reqBody := FAQRequest{Question: "What is the answer?"}
+	reqBody := ChatRequest{
+		Messages: []Message{
+			{Role: "user", Content: "What is the answer?"},
+		},
+	}
 	jsonBody, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest("POST", "/api/faq", bytes.NewBuffer(jsonBody))
+	e := echo.New()
+	req := httptest.NewRequest("POST", "/api/chat", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	recorder := httptest.NewRecorder()
+	c := e.NewContext(req, recorder)
 
-	handler := FAQHandler(appCtx)
-	handler(recorder, req)
+	handler := ChatHandler(appCtx)
+	err := handler(c)
+	if err != nil {
+		t.Fatalf("Handler returned error: %v", err)
+	}
 
 	if recorder.Code != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, recorder.Code)
 	}
 
-	var response FAQResponse
+	var response ChatResponse
 	if err := json.NewDecoder(recorder.Body).Decode(&response); err != nil {
 		t.Fatalf("Failed to decode response: %v", err)
 	}
 
-	expectedAnswer := "This is the answer to your question."
-	if response.Answer != expectedAnswer {
-		t.Errorf("Expected answer '%s', got '%s'", expectedAnswer, response.Answer)
+	expectedResponse := "This is the answer to your question."
+	if response.Response != expectedResponse {
+		t.Errorf("Expected response '%s', got '%s'", expectedResponse, response.Response)
 	}
 }
 
-func TestFAQHandler_EmptyQuestion(t *testing.T) {
+func TestChatHandler_EmptyMessages(t *testing.T) {
 	mockProvider := &mockChatProvider{}
 	appCtx := app.NewAppContext(mockProvider)
 
-	reqBody := FAQRequest{Question: ""}
+	reqBody := ChatRequest{
+		Messages: []Message{},
+	}
 	jsonBody, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest("POST", "/api/faq", bytes.NewBuffer(jsonBody))
+	e := echo.New()
+	req := httptest.NewRequest("POST", "/api/chat", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	recorder := httptest.NewRecorder()
+	c := e.NewContext(req, recorder)
 
-	handler := FAQHandler(appCtx)
-	handler(recorder, req)
+	handler := ChatHandler(appCtx)
+	err := handler(c)
+	if err != nil {
+		t.Fatalf("Handler returned error: %v", err)
+	}
 
 	if recorder.Code != http.StatusBadRequest {
 		t.Errorf("Expected status code %d, got %d", http.StatusBadRequest, recorder.Code)
 	}
 }
 
-func TestFAQHandler_InvalidJSON(t *testing.T) {
+func TestChatHandler_InvalidJSON(t *testing.T) {
 	mockProvider := &mockChatProvider{}
 	appCtx := app.NewAppContext(mockProvider)
 
-	req := httptest.NewRequest("POST", "/api/faq", bytes.NewBufferString("invalid json"))
+	e := echo.New()
+	req := httptest.NewRequest("POST", "/api/chat", bytes.NewBufferString("invalid json"))
 	req.Header.Set("Content-Type", "application/json")
 	recorder := httptest.NewRecorder()
+	c := e.NewContext(req, recorder)
 
-	handler := FAQHandler(appCtx)
-	handler(recorder, req)
+	handler := ChatHandler(appCtx)
+	err := handler(c)
+	if err != nil {
+		t.Fatalf("Handler returned error: %v", err)
+	}
 
 	if recorder.Code != http.StatusBadRequest {
 		t.Errorf("Expected status code %d, got %d", http.StatusBadRequest, recorder.Code)
 	}
 }
 
-func TestFAQHandler_ChatProviderError(t *testing.T) {
+func TestChatHandler_ChatProviderError(t *testing.T) {
 	mockProvider := &mockChatProvider{
 		err: chat.ErrProviderUnavailable,
 	}
 	appCtx := app.NewAppContext(mockProvider)
 
-	reqBody := FAQRequest{Question: "What is the answer?"}
+	reqBody := ChatRequest{
+		Messages: []Message{
+			{Role: "user", Content: "What is the answer?"},
+		},
+	}
 	jsonBody, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest("POST", "/api/faq", bytes.NewBuffer(jsonBody))
+	e := echo.New()
+	req := httptest.NewRequest("POST", "/api/chat", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	recorder := httptest.NewRecorder()
+	c := e.NewContext(req, recorder)
 
-	handler := FAQHandler(appCtx)
-	handler(recorder, req)
+	handler := ChatHandler(appCtx)
+	err := handler(c)
+	if err != nil {
+		t.Fatalf("Handler returned error: %v", err)
+	}
 
 	if recorder.Code != http.StatusInternalServerError {
 		t.Errorf("Expected status code %d, got %d", http.StatusInternalServerError, recorder.Code)
@@ -125,11 +157,16 @@ func TestStatusHandler(t *testing.T) {
 	mockProvider := &mockChatProvider{}
 	appCtx := app.NewAppContext(mockProvider)
 
+	e := echo.New()
 	req := httptest.NewRequest("GET", "/status", nil)
 	recorder := httptest.NewRecorder()
+	c := e.NewContext(req, recorder)
 
 	handler := StatusHandler(appCtx)
-	handler(recorder, req)
+	err := handler(c)
+	if err != nil {
+		t.Fatalf("Handler returned error: %v", err)
+	}
 
 	if recorder.Code != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, recorder.Code)
@@ -149,3 +186,90 @@ func TestStatusHandler(t *testing.T) {
 	}
 }
 
+func TestChatHandler_MultipleMessages(t *testing.T) {
+	mockProvider := &mockChatProvider{
+		response: &chat.ChatResponse{
+			Content: "Based on our conversation, here's my response.",
+		},
+	}
+	appCtx := app.NewAppContext(mockProvider)
+
+	reqBody := ChatRequest{
+		Messages: []Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi there!"},
+			{Role: "user", Content: "How are you?"},
+		},
+		Streaming: true,
+	}
+	jsonBody, _ := json.Marshal(reqBody)
+
+	e := echo.New()
+	req := httptest.NewRequest("POST", "/api/chat", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	c := e.NewContext(req, recorder)
+
+	handler := ChatHandler(appCtx)
+	err := handler(c)
+	if err != nil {
+		t.Fatalf("Handler returned error: %v", err)
+	}
+
+	if recorder.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, recorder.Code)
+	}
+
+	var response ChatResponse
+	if err := json.NewDecoder(recorder.Body).Decode(&response); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	expectedResponse := "Based on our conversation, here's my response."
+	if response.Response != expectedResponse {
+		t.Errorf("Expected response '%s', got '%s'", expectedResponse, response.Response)
+	}
+}
+
+func TestChatHandler_WithStreaming(t *testing.T) {
+	mockProvider := &mockChatProvider{
+		response: &chat.ChatResponse{
+			Content: "Streaming response content.",
+		},
+	}
+	appCtx := app.NewAppContext(mockProvider)
+
+	reqBody := ChatRequest{
+		Messages: []Message{
+			{Role: "user", Content: "Tell me a story"},
+		},
+		Streaming: true,
+	}
+	jsonBody, _ := json.Marshal(reqBody)
+
+	e := echo.New()
+	req := httptest.NewRequest("POST", "/api/chat", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	c := e.NewContext(req, recorder)
+
+	handler := ChatHandler(appCtx)
+	err := handler(c)
+	if err != nil {
+		t.Fatalf("Handler returned error: %v", err)
+	}
+
+	if recorder.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, recorder.Code)
+	}
+
+	var response ChatResponse
+	if err := json.NewDecoder(recorder.Body).Decode(&response); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	expectedResponse := "Streaming response content."
+	if response.Response != expectedResponse {
+		t.Errorf("Expected response '%s', got '%s'", expectedResponse, response.Response)
+	}
+}

@@ -16,12 +16,18 @@ type Status struct {
 	Status string `json:"status"`
 }
 
-type FAQRequest struct {
-	Question string `json:"question"`
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
-type FAQResponse struct {
-	Answer string `json:"answer"`
+type ChatRequest struct {
+	Messages  []Message `json:"messages"`
+	Streaming bool      `json:"streaming,omitempty"`
+}
+
+type ChatResponse struct {
+	Response string `json:"response"`
 }
 
 func StatusHandler(appCtx *app.AppContext) echo.HandlerFunc {
@@ -34,38 +40,45 @@ func StatusHandler(appCtx *app.AppContext) echo.HandlerFunc {
 	}
 }
 
-func FAQHandler(appCtx *app.AppContext) echo.HandlerFunc {
+func ChatHandler(appCtx *app.AppContext) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var faqReq FAQRequest
-		if err := c.Bind(&faqReq); err != nil {
-			slog.Error("Failed to decode FAQ request", "error", err)
+		var chatReq ChatRequest
+		if err := c.Bind(&chatReq); err != nil {
+			slog.Error("Failed to decode chat request", "error", err)
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request format"})
 		}
 
-		if faqReq.Question == "" {
-			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Question is required"})
+		// Validate messages array
+		if len(chatReq.Messages) == 0 {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Messages array is required and cannot be empty"})
 		}
 
-		chatReq := &chat.ChatRequest{
-			Messages: []chat.Message{
-				{
-					Role:    "user",
-					Content: faqReq.Question,
-				},
-			},
+		// Convert to internal message format
+		var messages []chat.Message
+		for _, msg := range chatReq.Messages {
+			messages = append(messages, chat.Message{
+				Role:    msg.Role,
+				Content: msg.Content,
+			})
 		}
 
-		chatResp, err := appCtx.ChatProvider.Chat(c.Request().Context(), chatReq)
+		chatRequest := &chat.ChatRequest{
+			Messages:  messages,
+			Streaming: chatReq.Streaming,
+		}
+
+		ctx := c.Request().Context()
+
+		chatResp, err := appCtx.ChatProvider.Chat(ctx, chatRequest)
 		if err != nil {
-			slog.Error("Failed to get answer from chat provider", "error", err, "question", faqReq.Question)
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to process question"})
+			slog.Error("Failed to get answer from chat provider", "error", err, "messages_count", len(chatReq.Messages))
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to process request"})
 		}
 
-		faqResp := FAQResponse{
-			Answer: chatResp.Content,
+		chatResponse := ChatResponse{
+			Response: chatResp.Content,
 		}
 
-		return c.JSON(http.StatusOK, faqResp)
+		return c.JSON(http.StatusOK, chatResponse)
 	}
 }
-

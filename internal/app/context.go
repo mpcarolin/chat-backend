@@ -21,16 +21,21 @@ func NewAppContext(chatProvider chat.ChatProvider) *AppContext {
 	}
 }
 
+func providerName() string {
+	provider := os.Getenv("CHAT_PROVIDER")
+	if provider == "" {
+		provider = "mock"
+	}
+	return provider
+}
+
 // Builds context object containing app dependencies used by handlers
 // In particular, contains chat provider, depending on whichever provider
 // you chose to set with CHAT_PROVIDER env
 func BuildAppContext() *AppContext {
 	var chatProvider chat.ChatProvider
 
-	provider := os.Getenv("CHAT_PROVIDER")
-	if provider == "" {
-		provider = "mock"
-	}
+	provider := providerName()
 
 	switch provider {
 	case "mock":
@@ -63,4 +68,3 @@ func BuildAppContext() *AppContext {
 
 	return NewAppContext(chatProvider)
 }
-

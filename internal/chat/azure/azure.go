@@ -22,7 +22,18 @@ func (p *AzureChatProvider) Chat(ctx context.Context, req *chat.ChatRequest) (*c
 		return nil, fmt.Errorf("no messages provided")
 	}
 
-	question := req.Messages[len(req.Messages)-1].Content
+	// Find the last user message to use as the question
+	var question string
+	for i := len(req.Messages) - 1; i >= 0; i-- {
+		if req.Messages[i].Role == "user" {
+			question = req.Messages[i].Content
+			break
+		}
+	}
+
+	if question == "" {
+		return nil, fmt.Errorf("no user message found in conversation")
+	}
 
 	queryResp, err := p.client.Query(ctx, question)
 	if err != nil {
@@ -39,3 +50,4 @@ func (p *AzureChatProvider) Chat(ctx context.Context, req *chat.ChatRequest) (*c
 		Content: queryResp.Answers[0].Answer,
 	}, nil
 }
+
