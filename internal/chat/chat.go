@@ -16,7 +16,8 @@ type Message struct {
 }
 
 type ChatRequest struct {
-	Messages []Message `json:"messages"`
+	Messages  []Message `json:"messages"`
+	Streaming bool      `json:"streaming,omitempty"`
 }
 
 type ChatResponse struct {
