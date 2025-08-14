@@ -1,0 +1,11 @@
+### Single user message
+POST http://localhost:8090/api/chat
+content-type: application/json
+
+{
+    "messages": [
+        {"role": "user", "content": "What is the capital of France?"}
+    ],
+    "streaming": false
+}
+

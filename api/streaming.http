@@ -1,0 +1,11 @@
+### Streaming response
+POST http://localhost:8090/api/chat
+content-type: application/json
+
+{
+    "messages": [
+        {"role": "user", "content": "Explain quantum computing in simple terms"}
+    ],
+    "streaming": true
+}
+

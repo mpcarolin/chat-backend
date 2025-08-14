@@ -1,0 +1,12 @@
+### Multi-turn conversation
+POST http://localhost:8090/api/chat
+content-type: application/json
+
+{
+    "messages": [
+        {"role": "user", "content": "Hello, my name is Jimmy"},
+        {"role": "assistant", "content": "Hello! How can I help you today?"},
+        {"role": "user", "content": "Tell me about star wars in one sentence, and refer to me by name"}
+    ],
+    "streaming": false
+}
