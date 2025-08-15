@@ -1,10 +1,25 @@
-import ChatBot from "react-chatbotify"
-import type { Settings, Flow, Params } from "react-chatbotify"
-import "./Chat.css"
+import ChatBot from "react-chatbotify";
+import type { Settings, Flow, Params } from "react-chatbotify";
+import "./Chat.css";
 
-type Path = "start" | "loop" | "end" | "error"
+type Path = "start" | "loop" | "end" | "error";
 
-const STOP_COMMANDS = ["quit", "q", "end", "stop", "goodbye", "bye", "finish", "finished", "i'm finished", "i'm done", "done", "complete", "all done"]
+const STOP_COMMANDS = [
+    "quit",
+    "q",
+    "end",
+    "stop",
+    "goodbye",
+    "bye",
+    "finish",
+    "finished",
+    "i'm finished",
+    "i'm done",
+    "done",
+    "all done",
+    "complete",
+];
+
 
 const chat = async (params: Params): Promise<Path> => {
     try {
