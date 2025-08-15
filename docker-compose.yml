@@ -1,4 +1,13 @@
 services:
+  app:
+    container_name: app
+    build:
+      context: packages/web
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://api:8090
+    restart: unless-stopped
   ollama:
     build:
       context: .
@@ -11,8 +20,8 @@ services:
     environment:
       - OLLAMA_KEEP_ALIVE=24h
       - OLLAMA_HOST=0.0.0.0
-  chat-backend:
-    container_name: chat-backend
+  api:
+    container_name: api
     build:
       context: packages/api
     ports:

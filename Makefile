@@ -31,6 +31,9 @@ help:
 api:
 	cd packages/api && go run .
 
+web:
+	cd packages/web && npm run dev
+
 # Run the server with mock provider
 api-mock:
 	cd packages/api && CHAT_PROVIDER=mock go run .

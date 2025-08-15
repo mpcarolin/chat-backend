@@ -10,6 +10,9 @@
     "preview": "vite preview",
     "test": "jest"
   },
+  "engines": {
+    "node": ">=23"
+  },
   "dependencies": {
     "react": "^19.1.0",
     "react-chatbotify": "^2.2.0",

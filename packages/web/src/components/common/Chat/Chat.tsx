@@ -11,15 +11,15 @@ const chat = async (params: Params): Promise<Path> => {
         if (STOP_COMMANDS.includes(params.userInput.toLowerCase())) {
             return "end"
         }
-        const res = await fetch("/api/faq", {
+        const res = await fetch("/api/chat", {
             method: "POST",
-            body: JSON.stringify({ question: params.userInput }),
+            body: JSON.stringify({ messages: [{ role: "user", content: params.userInput }] }),
             headers: {
                 "Content-Type": "application/json"
             }
         });
         const json = await res.json();
-        await params.injectMessage(json.answer);
+        await params.injectMessage(json.response);
         return "loop"
     } catch (error) {
         console.error(error);
