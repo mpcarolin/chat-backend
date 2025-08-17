@@ -23,14 +23,14 @@ services:
       - OLLAMA_KEEP_ALIVE=24h
       - OLLAMA_HOST=0.0.0.0
   api:
-    profiles: [backend]
+    profiles: [backend, api]
     container_name: api
     build:
       context: packages/api
     ports:
       - "8090:8090"
     environment:
-      - CHAT_PROVIDER=ollama
+      - CHAT_PROVIDER=${CHAT_PROVIDER:-mock}
       - OLLAMA_MODEL=gemma3:1b
       - OLLAMA_BASE_URL=http://ollama:11434
       - AZURE_QNA_ENDPOINT=${AZURE_QNA_ENDPOINT}
