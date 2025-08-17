@@ -26,9 +26,9 @@ export const Chat = () => {
     });
     const [pendingMessage, setPendingMessage] = useState("")
 
-    const penultimateMessageRef = useRef<HTMLDivElement>(null);
+    const messageRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
-        penultimateMessageRef.current?.scrollIntoView({ behavior: "smooth" })
+        messageRef.current?.scrollIntoView({ behavior: "smooth" })
     }, [messages]);
 
     return (
@@ -39,7 +39,7 @@ export const Chat = () => {
                         key={msg.uuid}
                         position={msg.role === "system" ? "left" : "right"}
                         content={msg.content}
-                        ref={idx === messages.length - 2 ? penultimateMessageRef : undefined}
+                        ref={idx === messages.length - 1 ? messageRef : undefined}
                     />
                 )}
                 {loading && <Message position="left" loading />}
