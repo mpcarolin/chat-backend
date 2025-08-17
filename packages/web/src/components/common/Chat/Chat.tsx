@@ -22,7 +22,8 @@ export const Chat = () => {
     const { messages, sendMessage, loading } = useChat({
         initialMessages: [
             systemMessage("How can I help you?"),
-        ]
+        ],
+        stream: true
     });
     const [pendingMessage, setPendingMessage] = useState("")
 
