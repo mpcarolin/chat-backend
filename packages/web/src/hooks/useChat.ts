@@ -1,26 +1,48 @@
 import { useState } from "react";
 
-type Message = {
+export const userMessage = (content: string): UserMessage => ({
+  content,
+  role: "user",
+  uuid: crypto.randomUUID()
+});
+
+export const systemMessage = (content: string): SystemMessage => ({
+  content,
+  role: "system",
+  uuid: crypto.randomUUID()
+});
+
+export type ChatMessage = {
   role: "user" | "system"
-  content: string
+  content: string,
+  uuid: string
 }
 
-type UserMessage = Message & {
+export type UserMessage = ChatMessage & {
   role: "user"
+}
+
+export type SystemMessage = ChatMessage & {
+  role: "system"
 }
 
 /**
  *
  */
-export const useChat = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+export const useChat = ({ initialMessages }: { initialMessages?: ChatMessage[] } = {}) => {
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages ?? []);
+
+  // can we do something fancier with react suspense?
+  const [loading, setLoading] = useState(false);
 
   const sendMessage = async (newMessage: UserMessage) => {
     const newMessages = [
       ...messages,
       newMessage
     ];
+
     setMessages(newMessages);
+    setLoading(true);
 
     return fetch("/api/chat", {
       method: "POST",
@@ -32,10 +54,11 @@ export const useChat = () => {
       .then(res => res.json())
       .then(json => setMessages([
         ...newMessages,
-        { role: "system", content: json.response }
-      ]));
+        systemMessage(json.response)
+      ]))
+      .finally(() => setLoading(false))
   }
 
-  return [messages, sendMessage]
+  return { messages, sendMessage, loading }
 }
 

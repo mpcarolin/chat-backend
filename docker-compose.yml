@@ -1,5 +1,6 @@
 services:
   app:
+    profiles: [frontend]
     container_name: app
     build:
       context: packages/web
@@ -9,6 +10,7 @@ services:
       - VITE_API_URL=http://api:8090
     restart: unless-stopped
   ollama:
+    profiles: [backend]
     build:
       context: .
       dockerfile: Dockerfile.ollama
@@ -21,6 +23,7 @@ services:
       - OLLAMA_KEEP_ALIVE=24h
       - OLLAMA_HOST=0.0.0.0
   api:
+    profiles: [backend]
     container_name: api
     build:
       context: packages/api

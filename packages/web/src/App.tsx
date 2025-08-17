@@ -4,8 +4,7 @@ import { Chat } from './components/common/Chat/Chat'
 function App() {
 
   return (
-    <div>
-      <p>Ask any question:</p>
+    <div className="app-root">
       <Chat />
     </div>
   )
