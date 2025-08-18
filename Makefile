@@ -52,7 +52,7 @@ api-ollama:
 	@echo "Starting server with Ollama provider..."
 	@echo "Using OLLAMA_BASE_URL: $${OLLAMA_BASE_URL:-http://localhost:11434}"
 	@echo "Using OLLAMA_MODEL: $${OLLAMA_MODEL:-mistral}"
-	cd packages/api && CHAT_PROVIDER=ollama go run .
+	cd packages/api && CHAT_PROVIDER=ollama OLLAMA_MODEL=gemma3:1b OLLAMA_BASE_URL=http://localhost:11434 go run .
 
 # Run all tests
 test:

@@ -21,6 +21,10 @@ func main() {
 	e.Use(middleware.RateLimit())
 
 	// Routes
+	// Serve the SPA
+	e.Static("/", "./static/dist")
+
+	// Serve the api endpoints
 	e.GET("/status", handlers.StatusHandler(ctx))
 	e.POST("/api/chat", handlers.ChatHandler(ctx))
 
