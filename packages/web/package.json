@@ -14,6 +14,7 @@
     "node": ">=23"
   },
   "dependencies": {
+    "@microsoft/fetch-event-source": "^2.0.1",
     "react": "^19.1.0",
     "react-chatbotify": "^2.2.0",
     "react-dom": "^19.1.0"
