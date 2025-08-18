@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -69,6 +70,44 @@ func ChatHandler(appCtx *app.AppContext) echo.HandlerFunc {
 
 		ctx := c.Request().Context()
 
+		if chatReq.Streaming {
+			// Set up Server-Sent Events headers
+			c.Response().Header().Set("Content-Type", "text/event-stream")
+			c.Response().Header().Set("Cache-Control", "no-cache")
+			c.Response().Header().Set("Connection", "keep-alive")
+			c.Response().Header().Set("Access-Control-Allow-Origin", "*")
+
+			// Flush headers immediately
+			c.Response().WriteHeader(http.StatusOK)
+			c.Response().Flush()
+
+			// Stream callback function
+			streamCallback := func(chunk *chat.ChatResponse) error {
+				data := fmt.Sprintf("data: {\"response\": \"%s\", \"done\": false}\n\n", chunk.Content)
+				if _, err := c.Response().Write([]byte(data)); err != nil {
+					return err
+				}
+				c.Response().Flush()
+				return nil
+			}
+
+			err := appCtx.ChatProvider.ChatStream(ctx, chatRequest, streamCallback)
+			if err != nil {
+				slog.Error("Failed to stream chat response", "error", err, "messages_count", len(chatReq.Messages))
+				errorData := fmt.Sprintf("data: {\"error\": \"Failed to process request\"}\n\n")
+				c.Response().Write([]byte(errorData))
+				c.Response().Flush()
+				return nil
+			}
+
+			// Send final done message
+			doneData := fmt.Sprintf("data: {\"done\": true}\n\n")
+			c.Response().Write([]byte(doneData))
+			c.Response().Flush()
+			return nil
+		}
+
+		// Non-streaming response (existing behavior)
 		chatResp, err := appCtx.ChatProvider.Chat(ctx, chatRequest)
 		if err != nil {
 			slog.Error("Failed to get answer from chat provider", "error", err, "messages_count", len(chatReq.Messages))

@@ -51,3 +51,7 @@ func (p *AzureChatProvider) Chat(ctx context.Context, req *chat.ChatRequest) (*c
 	}, nil
 }
 
+func (p *AzureChatProvider) ChatStream(ctx context.Context, req *chat.ChatRequest, callback chat.StreamCallback) error {
+	return fmt.Errorf("streaming not supported by azure provider")
+}
+

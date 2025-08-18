@@ -120,6 +120,10 @@ func (m *MockChatProvider) findBestMatch(userQuestion string) *QAPair {
 	return nil
 }
 
+func (m *MockChatProvider) ChatStream(ctx context.Context, req *chat.ChatRequest, callback chat.StreamCallback) error {
+	return fmt.Errorf("streaming not supported by mock provider")
+}
+
 func longestCommonSubstring(s1, s2 string) int {
 	maxLen := 0
 

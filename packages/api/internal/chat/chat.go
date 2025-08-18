@@ -31,6 +31,9 @@ type Usage struct {
 	TotalTokens      int `json:"total_tokens"`
 }
 
+type StreamCallback func(chunk *ChatResponse) error
+
 type ChatProvider interface {
 	Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error)
+	ChatStream(ctx context.Context, req *ChatRequest, callback StreamCallback) error
 }

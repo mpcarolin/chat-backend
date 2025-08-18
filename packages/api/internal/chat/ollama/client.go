@@ -10,8 +10,11 @@ import (
 	"strings"
 )
 
+type StreamCallback func(chunk *ChatResponse) error
+
 type OllamaClient interface {
 	Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error)
+	ChatStream(ctx context.Context, req *ChatRequest, callback StreamCallback) error
 }
 
 type ollamaHttpClient struct {
@@ -82,6 +85,60 @@ func (c *ollamaHttpClient) Chat(ctx context.Context, req *ChatRequest) (*ChatRes
 	}
 
 	return c.handleNonStreamingResponse(resp.Body)
+}
+
+func (c *ollamaHttpClient) ChatStream(ctx context.Context, req *ChatRequest, callback StreamCallback) error {
+	req.Model = c.model
+	req.Stream = true
+
+	reqBody, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/api/chat", c.baseURL)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ollama API returned status %d", resp.StatusCode)
+	}
+
+	return c.handleStreamingResponseWithCallback(resp.Body, callback)
+}
+
+func (c *ollamaHttpClient) handleStreamingResponseWithCallback(body io.Reader, callback StreamCallback) error {
+	decoder := json.NewDecoder(body)
+
+	for {
+		var ollamaResp ChatResponse
+		if err := decoder.Decode(&ollamaResp); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return fmt.Errorf("failed to decode streaming response: %w", err)
+		}
+
+		if err := callback(&ollamaResp); err != nil {
+			return fmt.Errorf("callback error: %w", err)
+		}
+
+		if ollamaResp.Done {
+			break
+		}
+	}
+
+	return nil
 }
 
 // TODO: this isn't right, not actually streaming. Let's fix.

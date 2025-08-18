@@ -44,3 +44,32 @@ func (p *OllamaChatProvider) Chat(ctx context.Context, req *chat.ChatRequest) (*
 		Content: ollamaResp.Message.Content,
 	}, nil
 }
+
+func (p *OllamaChatProvider) ChatStream(ctx context.Context, req *chat.ChatRequest, callback chat.StreamCallback) error {
+	if len(req.Messages) == 0 {
+		return fmt.Errorf("no messages provided")
+	}
+
+	ollamaMessages := make([]OllamaMessage, len(req.Messages))
+	for i, msg := range req.Messages {
+		ollamaMessages[i] = OllamaMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		}
+	}
+
+	ollamaReq := &ChatRequest{
+		Messages: ollamaMessages,
+		Stream:   true,
+	}
+
+	// Create a callback that converts ollama responses to chat responses
+	ollamaCallback := func(ollamaResp *ChatResponse) error {
+		chatResp := &chat.ChatResponse{
+			Content: ollamaResp.Message.Content,
+		}
+		return callback(chatResp)
+	}
+
+	return p.client.ChatStream(ctx, ollamaReq, ollamaCallback)
+}
