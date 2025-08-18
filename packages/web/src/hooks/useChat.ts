@@ -57,15 +57,20 @@ export const useChat = ({ initialMessages }: { initialMessages?: ChatMessage[] }
     setMessages(newMessages);
     setLoading(true);
 
-    const fetchFn = options.stream ? sendMessageStreaming : sendMessageNonStreaming
+    const send = options.stream
+      ? sendMessageStreaming
+      : sendMessageNonStreaming;
 
-    return fetchFn(newMessages, setMessages).finally(() => setLoading(false))
+    return send(newMessages, setMessages, setLoading).finally(() => setLoading(false))
   }
 
   return { messages, sendMessage, loading }
 }
 
-const sendMessageNonStreaming = async (messages: ChatMessage[], setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>) => {
+const sendMessageNonStreaming = async (
+  messages: ChatMessage[],
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
+) => {
   return fetch("/api/chat", {
     method: "POST",
     body: JSON.stringify({ messages }),
@@ -80,7 +85,11 @@ const sendMessageNonStreaming = async (messages: ChatMessage[], setMessages: Rea
     ]))
 }
 
-const sendMessageStreaming = async (messages: ChatMessage[], setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>) => {
+const sendMessageStreaming = async (
+  messages: ChatMessage[],
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>,
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>
+) => {
   setMessages([
     ...messages,
     systemMessage("") // <-- start a new message that we will be adding to with each chunk
@@ -103,6 +112,8 @@ const sendMessageStreaming = async (messages: ChatMessage[], setMessages: React.
         console.log("Could not parse part of message", err)
         return;
       }
+
+      setLoading(false); // once we've received a valid message, can disable loading ui
 
       if (value.done) {
         return;
