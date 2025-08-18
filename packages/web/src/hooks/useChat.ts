@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { fetchEventSource } from '@microsoft/fetch-event-source';
+
 
 export const userMessage = (content: string): UserMessage => ({
   content,
@@ -33,16 +35,21 @@ export type SystemMessage = ChatMessage & {
   role: "system"
 }
 
+export type StreamResponse = {
+  done: boolean;
+  response: ChatMessage
+}
+
 /**
  *
  */
-export const useChat = ({ initialMessages, stream }: { initialMessages?: ChatMessage[], stream?: boolean } = {}) => {
+export const useChat = ({ initialMessages }: { initialMessages?: ChatMessage[] } = {}) => {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages ?? []);
 
   // can we do something fancier with react suspense?
   const [loading, setLoading] = useState(false);
 
-  const sendMessage = async (newMessage: UserMessage) => {
+  const sendMessage = async (newMessage: UserMessage, options: { stream?: boolean } = {}) => {
     const newMessages = [
       ...messages,
       newMessage
@@ -51,7 +58,7 @@ export const useChat = ({ initialMessages, stream }: { initialMessages?: ChatMes
     setMessages(newMessages);
     setLoading(true);
 
-    const fetchFn = stream ? sendMessageStreaming : sendMessageNonStreaming
+    const fetchFn = options.stream ? sendMessageStreaming : sendMessageNonStreaming
 
     return fetchFn(newMessages, setMessages).finally(() => setLoading(false))
   }
@@ -64,7 +71,7 @@ const sendMessageBase = (messages: ChatMessage[], streaming?: boolean) => {
     method: "POST",
     body: JSON.stringify({ messages, streaming }),
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     }
   })
 }
@@ -82,47 +89,46 @@ const sendMessageStreaming = async (messages: ChatMessage[], setMessages: React.
   const res = await sendMessageBase(messages, true)
   if (!res.body) throw new Error("Uh oh");
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder("utf-8");
-  let buffer = "";
-
   setMessages([
     ...messages,
     systemMessage("") // <-- start a new message that we will be adding to with each chunk
-  ])
+  ]);
 
-  while (true) {
-    const { value, done } = await reader.read();
-    console.log({ value, done })
-    if (done) break;
+  const decoder = new TextDecoder();
 
-    // convert bytes to string
-    buffer += decoder.decode(value, { stream: true });
+  return readChunks(res.body, (chunk) => {
+    const raw = decoder.decode(chunk);
+    console.log({ raw, chunk })
+    const streamResponse = JSON.parse(raw) as StreamResponse;
+    setMessages(prev => {
+      const last = prev[prev.length - 1];
+      return [
+        ...prev.slice(0, prev.length - 1),
+        appendToMessage(last, streamResponse.response.content)
+      ];
+    });
+  })
 
-    // split by newline
-    const lines = buffer.split("\n");
-    console.log({ lines, buffer })
-    buffer = lines.pop() ?? ""; // incomplete line stays in buffer
+}
 
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        const chunk = JSON.parse(line);
-        console.log({ chunk })
+async function readChunks<T>(stream: ReadableStream<T>, onChunkReceived: (chunk: T) => void) {
+  const reader = stream.getReader();
+  const chunks = [];
 
-        // incrementally build this last message
-        setMessages((prev) => {
-          const [last, ...messages] = prev.reverse();
-          return [
-            ...messages,
-            appendToMessage(last, chunk)
-          ]
-        });
-      } catch (err) {
-        console.error("Failed to pase chunk", err, line);
-      }
+  let done, value;
+  while (!done) {
+    ({ value, done } = await reader.read());
+    if (done) {
+      break;
     }
+    if (value !== undefined) {
+      onChunkReceived(value);
+    }
+
+    chunks.push(value);
   }
+
+  return chunks;
 }
 
 
