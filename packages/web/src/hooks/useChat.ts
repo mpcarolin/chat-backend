@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 
-
 export const userMessage = (content: string): UserMessage => ({
   content,
   role: "user",
@@ -37,7 +36,7 @@ export type SystemMessage = ChatMessage & {
 
 export type StreamResponse = {
   done: boolean;
-  response: ChatMessage
+  response: string
 }
 
 /**
@@ -66,18 +65,14 @@ export const useChat = ({ initialMessages }: { initialMessages?: ChatMessage[] }
   return { messages, sendMessage, loading }
 }
 
-const sendMessageBase = (messages: ChatMessage[], streaming?: boolean) => {
+const sendMessageNonStreaming = async (messages: ChatMessage[], setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>) => {
   return fetch("/api/chat", {
     method: "POST",
-    body: JSON.stringify({ messages, streaming }),
+    body: JSON.stringify({ messages }),
     headers: {
       "Content-Type": "application/json",
     }
   })
-}
-
-const sendMessageNonStreaming = async (messages: ChatMessage[], setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>) => {
-  return sendMessageBase(messages, true)
     .then(res => res.json())
     .then(json => setMessages([
       ...messages,
@@ -86,49 +81,40 @@ const sendMessageNonStreaming = async (messages: ChatMessage[], setMessages: Rea
 }
 
 const sendMessageStreaming = async (messages: ChatMessage[], setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>) => {
-  const res = await sendMessageBase(messages, true)
-  if (!res.body) throw new Error("Uh oh");
-
   setMessages([
     ...messages,
     systemMessage("") // <-- start a new message that we will be adding to with each chunk
   ]);
+  return fetchEventSource("/api/chat", {
+    method: "POST",
+    body: JSON.stringify({ messages, streaming: true }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    onmessage: (message) => {
+      console.log("onmessage", { message })
+      let value: StreamResponse;
+      if (!message.data) {
+        value = { response: " ", done: false };
+      }
+      try {
+        value = JSON.parse(message.data)
+      } catch (err) {
+        console.log("Could not parse part of message", err)
+        return;
+      }
 
-  const decoder = new TextDecoder();
+      if (value.done) {
+        return;
+      }
 
-  return readChunks(res.body, (chunk) => {
-    const raw = decoder.decode(chunk);
-    console.log({ raw, chunk })
-    const streamResponse = JSON.parse(raw) as StreamResponse;
-    setMessages(prev => {
-      const last = prev[prev.length - 1];
-      return [
-        ...prev.slice(0, prev.length - 1),
-        appendToMessage(last, streamResponse.response.content)
-      ];
-    });
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        return [
+          ...prev.slice(0, prev.length - 1),
+          appendToMessage(last, value.response ?? " ")
+        ];
+      });
+    }
   })
-
 }
-
-async function readChunks<T>(stream: ReadableStream<T>, onChunkReceived: (chunk: T) => void) {
-  const reader = stream.getReader();
-  const chunks = [];
-
-  let done, value;
-  while (!done) {
-    ({ value, done } = await reader.read());
-    if (done) {
-      break;
-    }
-    if (value !== undefined) {
-      onChunkReceived(value);
-    }
-
-    chunks.push(value);
-  }
-
-  return chunks;
-}
-
-
