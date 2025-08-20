@@ -1,4 +1,4 @@
-.PHONY: help run test build clean dbuild up watch run-mock run-azure run-ollama
+.PHONY: help run test build clean dbuild up watch run-mock run-azure run-ollama aspire aspire-deploy
 
 # Default target
 help:
@@ -19,6 +19,10 @@ help:
 	@echo "  make dbuild     - Build Docker image"
 	@echo "  make up         - Run with Docker Compose"
 	@echo "  make watch      - Run with Docker Compose watch (auto-rebuild)"
+	@echo ""
+	@echo "Aspire commands:"
+	@echo "  make aspire     - Run locally with .NET Aspire dashboard"
+	@echo "  make aspire-deploy - Deploy to Azure Container Apps"
 	@echo ""
 	@echo "Environment variables for Azure:"
 	@echo "  AZURE_QNA_ENDPOINT, AZURE_QNA_API_KEY, AZURE_QNA_PROJECT_NAME, AZURE_QNA_DEPLOYMENT_NAME"
@@ -77,3 +81,14 @@ up:
 # Run with Docker Compose watch (auto-rebuild on file changes)
 watch:
 	docker-compose watch
+
+# Run locally with .NET Aspire dashboard
+aspire:
+	cd infra/aspire/ChatBackend.AppHost && dotnet run
+
+# Deploy to Azure Container Apps using Aspire
+aspire-deploy:
+	cd infra/aspire/ChatBackend.AppHost && dotnet run --publisher manifest --output-path ../aspire-manifest.json
+	@echo ""
+	@echo "Manifest generated at infra/aspire/aspire-manifest.json"
+	@echo "Deploy with: azd deploy --from aspire-manifest.json"
