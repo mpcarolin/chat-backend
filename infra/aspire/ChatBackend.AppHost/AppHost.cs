@@ -1,5 +1,13 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
+// Azure Language Service (includes Custom Question Answering) - free tier
+var languageService = builder.AddAzureCognitiveServices("language-service")
+    .ConfigureConstruct(construct =>
+    {
+        construct.Kind = "TextAnalytics"; // Language Service kind  
+        construct.Sku = new() { Name = "F0" }; // Free tier
+    });
+
 // Ollama container (local only)
 var ollama = builder.AddDockerfile("ollama", "../../../", "Dockerfile.ollama")
     .WithHttpEndpoint(targetPort: 11434, port: 11434, name: "http")
@@ -23,6 +31,6 @@ var api = builder.AddDockerfile("api", "../../../packages/api")
 var web = builder.AddDockerfile("web", "../../../packages/web")
     .WithHttpEndpoint(targetPort: 5173, port: 5173, name: "http")
     .WithEnvironment("VITE_API_URL", api.GetEndpoint("http"))
-    .PublishAsAzureContainerApp();
+    .ExcludeFromManifest(); // in cloud, react app prod bundle is served by api 
 
 builder.Build().Run();
