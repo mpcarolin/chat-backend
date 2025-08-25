@@ -84,11 +84,11 @@ watch:
 
 # Run locally with .NET Aspire dashboard
 aspire:
-	cd infra/aspire/ChatBackend.AppHost && dotnet run
+	cd infra/aspire/Chat.AppHost && dotnet run
 
 # Deploy to Azure Container Apps using Aspire
 aspire-deploy:
-	cd infra/aspire/ChatBackend.AppHost && dotnet run --publisher manifest --output-path ../aspire-manifest.json
+	cd infra/aspire/Chat.AppHost && dotnet run --publisher manifest --output-path ../aspire-manifest.json
 	@echo ""
 	@echo "Manifest generated at infra/aspire/aspire-manifest.json"
 	@echo "Deploy with: azd deploy --from aspire-manifest.json"

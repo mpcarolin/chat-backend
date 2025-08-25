@@ -1,6 +1,5 @@
 services:
   app:
-    profiles: [frontend]
     container_name: app
     build:
       context: packages/web

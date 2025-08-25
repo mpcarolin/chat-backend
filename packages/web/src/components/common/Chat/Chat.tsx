@@ -33,7 +33,7 @@ export const Chat = () => {
                 if (!pendingMessage) return;
                 sendMessage(
                     userMessage(pendingMessage),
-                    { stream: true }
+                    { stream: false }
                 );
                 setPendingMessage("");
             }}>

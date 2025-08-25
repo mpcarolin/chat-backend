@@ -1,15 +1,21 @@
 package main
 
 import (
+	"embed"
 	"log"
 	"log/slog"
+	"net/http"
 
 	"github.com/labstack/echo/v4"
+	emiddleware "github.com/labstack/echo/v4/middleware"
 
 	"chat-backend/internal/app"
 	"chat-backend/internal/handlers"
 	"chat-backend/internal/middleware"
 )
+
+//go:embed static/dist
+var webAssets embed.FS
 
 func main() {
 	ctx := app.BuildAppContext()
@@ -19,6 +25,11 @@ func main() {
 	// Add middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.RateLimit())
+	e.Use(emiddleware.StaticWithConfig(emiddleware.StaticConfig{
+		HTML5:      true,
+		Root:       "static/dist",
+		Filesystem: http.FS(webAssets),
+	}))
 
 	// Routes
 	// Serve the SPA
