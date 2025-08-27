@@ -8,6 +8,8 @@ services:
     environment:
       - VITE_API_URL=http://api:8090
     restart: unless-stopped
+    volumes:
+      - ./packages/web/src:/app/src
   ollama:
     profiles: [backend]
     build:
@@ -22,7 +24,6 @@ services:
       - OLLAMA_KEEP_ALIVE=24h
       - OLLAMA_HOST=0.0.0.0
   api:
-    profiles: [backend, api]
     container_name: api
     build:
       context: packages/api
