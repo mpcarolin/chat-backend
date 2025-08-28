@@ -12,7 +12,9 @@ help:
 	@echo "General commands:"
 	@echo "  make run        - Run the server with default provider"
 	@echo "  make test       - Run all tests"
-	@echo "  make build      - Build the application"
+	@echo "  make build-api  - Build the API application"
+	@echo "  make build-web  - Build the web application"
+	@echo "  make build-web-full - Build web app and copy to API static directory"
 	@echo "  make clean      - Remove built binaries"
 	@echo ""
 	@echo "Docker commands:"
@@ -62,7 +64,20 @@ api-ollama:
 test:
 	cd packages/api && go test -v ./...
 
-# Build the application
+# Build the web application
+build-web:
+	cd packages/web && npm run build
+
+# Copy web build to API static directory
+copy-web:
+	rm -rf packages/api/static/dist
+	cp -r packages/web/dist packages/api/static/
+
+# Build web and copy to API (complete web build process)
+build-web-full: build-web copy-web
+	@echo "Web application built and copied to API static directory"
+
+# Build the API application
 build-api:
 	cd packages/api && go build -o ../../chat-backend
 

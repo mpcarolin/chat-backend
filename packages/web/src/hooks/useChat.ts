@@ -1,25 +1,6 @@
 import { useState } from "react";
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 
-export const userMessage = (content: string): UserMessage => ({
-  content,
-  role: "user",
-  uuid: crypto.randomUUID()
-});
-
-export const systemMessage = (content: string): SystemMessage => ({
-  content,
-  role: "system",
-  uuid: crypto.randomUUID()
-});
-
-export const appendToMessage = (msg: ChatMessage, content: string) => {
-  return {
-    ...msg,
-    content: msg.content + content
-  }
-}
-
 export type ChatMessage = {
   role: "user" | "system"
   content: string,
@@ -40,7 +21,34 @@ export type StreamResponse = {
 }
 
 /**
- *
+ * Create a user message object
+ */
+export const userMessage = (content: string): UserMessage => ({
+  content,
+  role: "user",
+  uuid: crypto.randomUUID()
+});
+
+/**
+ * Create a system message object
+ */
+export const systemMessage = (content: string): SystemMessage => ({
+  content,
+  role: "system",
+  uuid: crypto.randomUUID()
+});
+
+const appendToMessage = (msg: ChatMessage, content: string) => {
+  return {
+    ...msg,
+    content: msg.content + content
+  }
+}
+
+
+/**
+ * Provides react state for chat history, a function for sending messages to the backend api, and a loading
+ * boolean indicating when we are waiting for responses
  */
 export const useChat = ({ initialMessages }: { initialMessages?: ChatMessage[] } = {}) => {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages ?? []);
@@ -94,6 +102,8 @@ const sendMessageStreaming = async (
     ...messages,
     systemMessage("") // <-- start a new message that we will be adding to with each chunk
   ]);
+  // fetch-event-source allows us to use a fetch-like api function for 
+  // getting a stream of data from our backend
   return fetchEventSource("/api/chat", {
     method: "POST",
     body: JSON.stringify({ messages, streaming: true }),
