@@ -1,5 +1,6 @@
 import { Chat } from "../../common/Chat/Chat"
 import { systemMessage, useChat, userMessage } from "../../../hooks/useChat"
+import { shouldEnableStreaming } from "../../../utils/chatConfig"
 import "./ChatDemoContainer.css"
 
 /**
@@ -12,11 +13,12 @@ export const ChatDemoContainer = () => {
         ],
     });
 
+    const enableStreaming = shouldEnableStreaming();
+
     const handleMessageSubmit = (message: string) => {
         sendMessage(
             userMessage(message),
-            // stream can only be enabled for providers that support it, e.g. OpenAI
-            { stream: false }
+            { stream: enableStreaming }
         );
     };
 

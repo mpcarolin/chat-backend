@@ -7,6 +7,7 @@ services:
       - "5173:5173"
     environment:
       - VITE_API_URL=http://api:8090
+      - VITE_CHAT_PROVIDER=${CHAT_PROVIDER:-mock}
     restart: unless-stopped
     volumes:
       - ./packages/web/src:/app/src
